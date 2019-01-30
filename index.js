@@ -4,6 +4,19 @@ const fs = require('fs')
 
 const app = new Koa()
 const router = new Router()
+const server = require('http').createServer(app.callback())
+const io = require('socket.io')(server)
+
+app.use(async (ctx, next) => {
+  ctx.set("Access-Control-Allow-Origin", "*")
+  ctx.set("Access-Control-Allow-Methods", "OPTIONS, GET, PUT, POST, DELETE")
+  ctx.set("Access-Control-Allow-Headers", "x-requested-with, accept, origin, content-type")
+  ctx.set("Content-Type", "application/json;charset=utf-8")
+  ctx.set("Access-Control-Allow-Credentials", true)
+  ctx.set("Access-Control-Max-Age", 300)
+  // ctx.set("Access-Control-Expose-Headers", "myData")
+  await next()
+})
 
 let urls = fs.readdirSync(__dirname + '/router')
 urls.forEach(item => {
@@ -12,17 +25,31 @@ urls.forEach(item => {
 })
 app.use(router.routes())
 
-const os = require('os')
-      iptable = {}
-      ifaces = os.networkInterfaces()
-for (const i in ifaces) {
-  ifaces[i].forEach((item, index) => {
-    if (item.family=='IPv4') {
-      iptable[i] = item.address
-    }
+let userNameList = new Map()
+io.on('connection', socket => {
+  // 登录
+  socket.on('login', data => {
+    userNameList.set(socket.id, data)
+    socket.emit('login', { code: 0 })
+    socket.broadcast.emit('num', userNameList.size)
   })
-}
-console.log(iptable.以太网);
-app.listen(3000, () => {
+  // 获取人数
+  socket.on('getLoginInfo', data => {
+    socket.emit('id', socket.id)
+    socket.emit('num', userNameList.size)
+  })
+  // 接收信息
+  socket.on('send', data => {
+    socket.emit('message', { user: userNameList.get(socket.id), content: data })
+    socket.broadcast.emit('message', { user: userNameList.get(socket.id), content: data })
+  })
+  // 断线
+  socket.on('disconnect', res => {
+    userNameList.delete(socket.id)
+    socket.broadcast.emit('num', userNameList.size)
+  })
+})
+
+server.listen(3000, () => {
   console.log('run 3000');
 })
