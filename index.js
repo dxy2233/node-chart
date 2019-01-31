@@ -1,6 +1,7 @@
 const Koa = require('koa')
 const Router = require('koa-router')
 const fs = require('fs')
+const path = require('path')
 
 const app = new Koa()
 const router = new Router()
@@ -11,11 +12,15 @@ app.use(async (ctx, next) => {
   ctx.set("Access-Control-Allow-Origin", "*")
   ctx.set("Access-Control-Allow-Methods", "OPTIONS, GET, PUT, POST, DELETE")
   ctx.set("Access-Control-Allow-Headers", "x-requested-with, accept, origin, content-type")
-  ctx.set("Content-Type", "application/json;charset=utf-8")
   ctx.set("Access-Control-Allow-Credentials", true)
   ctx.set("Access-Control-Max-Age", 300)
-  // ctx.set("Access-Control-Expose-Headers", "myData")
   await next()
+})
+
+router.get('/', async (ctx, next) => {
+  ctx.type = 'text/html'
+  ctx.body = fs.createReadStream('./dist/index.html')
+  app.use(require('koa-static')(path.join(__dirname, '/dist')))
 })
 
 let urls = fs.readdirSync(__dirname + '/router')
@@ -25,6 +30,7 @@ urls.forEach(item => {
 })
 app.use(router.routes())
 
+// socket
 let userNameList = new Map()
 io.on('connection', socket => {
   // 登录
