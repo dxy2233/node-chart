@@ -37,12 +37,12 @@ io.on('connection', socket => {
   socket.on('login', data => {
     userNameList.set(socket.id, data)
     socket.emit('login', { code: 0 })
-    socket.broadcast.emit('num', userNameList.size)
+    socket.broadcast.emit('numList', {content: [...userNameList.values()]})
   })
   // 获取人数
   socket.on('getLoginInfo', data => {
-    socket.emit('id', socket.id)
-    socket.emit('num', userNameList.size)
+    socket.emit('numList', {content: [...userNameList.values()]})
+    socket.broadcast.emit('numList', {content: [...userNameList.values()]})
   })
   // 接收信息
   socket.on('send', data => {
@@ -52,7 +52,7 @@ io.on('connection', socket => {
   // 断线
   socket.on('disconnect', res => {
     userNameList.delete(socket.id)
-    socket.broadcast.emit('num', userNameList.size)
+    socket.broadcast.emit('numList', {content: [...userNameList.values()]})
   })
 })
 
